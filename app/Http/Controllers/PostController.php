@@ -10,6 +10,7 @@ use Illuminate\Support\Facades\Storage;
 use App\Mail\PostMail;
 use Illuminate\Support\Facades\Mail;
 use App\Jobs\SendNewPostMailJob;
+use Illuminate\Support\Facades\Log;
 
 class PostController extends Controller
 {
@@ -58,6 +59,7 @@ class PostController extends Controller
         auth()->user()->posts()->create($validatedData);
 
         dispatch(new SendNewPostMailJob(['email' => auth()->user()->email, 'name' => auth()->user()->name, 'title' => $validatedData['title']]));
+        Log::info('New post created by ' . auth()->user()->id);
         return to_route('posts.index')->with('message', 'Post created successfully.');
     }
 
@@ -67,6 +69,7 @@ class PostController extends Controller
     public function show(Post $post)
     {
         $post = Post::findOrFail($post->id);
+        Log::info('Post ' . $post->id . ' was viewed by ' . auth()->user()->id);
         return view('posts.show', ['post' => $post]);
     }
 
@@ -76,6 +79,7 @@ class PostController extends Controller
     public function edit(Post $post)
     {
         Gate::authorize('update', $post);
+        Log::info('Post ' . $post->id . ' was edited by ' . auth()->user()->id);
         return view('posts.edit', ['post' => $post]);
     }
 
@@ -97,6 +101,7 @@ class PostController extends Controller
             $validatedData['thumbnail'] = $request->file('thumbnail')->store('thumbnails');
         }
         $post->update($validatedData);
+        Log::info('Post ' . $post->id . ' was updated by ' . auth()->user()->id);
         return to_route('posts.show', ['post' => $post]);
     }
 
@@ -108,6 +113,7 @@ class PostController extends Controller
         Gate::authorize('delete', $post);
         File::delete(storage_path('app/public/' . $post->thumbnail));
         $post->delete();
+        Log::info('Post ' . $post->id . ' was deleted by ' . auth()->user()->id);
         return to_route('posts.index');
     }
 }
